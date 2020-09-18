@@ -1,6 +1,7 @@
-import { app, BrowserWindow, screen } from 'electron';
+import { app, BrowserWindow, screen, ipcMain } from 'electron';
 import * as path from 'path';
 import * as url from 'url';
+import * as fs from 'fs';
 
 let win: BrowserWindow = null;
 const args = process.argv.slice(1),
@@ -20,7 +21,7 @@ function createWindow(): BrowserWindow {
     webPreferences: {
       nodeIntegration: true,
       allowRunningInsecureContent: (serve) ? true : false,
-      enableRemoteModule : false // true if you want to use remote module in renderer context (ie. Angular)
+      enableRemoteModule: false // true if you want to use remote module in renderer context (ie. Angular)
     },
   });
 
@@ -74,6 +75,25 @@ try {
     if (win === null) {
       createWindow();
     }
+  });
+  ipcMain.on('get-app-data-path', (event, args) => {
+    event.returnValue = app.getPath('appData');
+  });
+  ipcMain.on('load-data', (event, args) => {
+    let path = app.getPath('appData') + '/save.json';
+    if (!fs.existsSync(path)) {
+      event.returnValue = [];
+      return;
+    }
+    let data = fs.readFileSync(path);
+    event.returnValue = JSON.parse(data.toString());
+
+  });
+  ipcMain.on('save-data', (event, args) => {
+    let data = JSON.stringify(args);
+    console.log(data);
+    let path = app.getPath('appData');
+    fs.writeFileSync(path + '/' + 'save.json', data);
   });
 
 } catch (e) {
