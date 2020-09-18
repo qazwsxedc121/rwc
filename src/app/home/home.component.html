@@ -4,4 +4,23 @@
   </h1>
 
   <a routerLink="/detail">{{ 'PAGES.HOME.GO_TO_DETAIL' | translate }}</a>
+  
+  <div>
+    <input type="text" [(ngModel)]="newWord" (keyup.enter)="keyEnter()">
+    <select [(ngModel)]="currentTag">
+      <option *ngFor="let tag of tagList;" [ngValue]="tag">{{tag}}</option>
+    </select>
+    <button (click)="addWord(newWord)">addWord</button>
+  </div>
+  <div>
+    <input type="text" [(ngModel)]="newTag" (keyup.enter)="tagKeyEnter()">
+  </div>
+  <div>
+    <span *ngFor="let word of wordList;">
+      {{word.toString()}}
+    </span>
+  </div>
+  <div>
+    <span *ngFor="let tag of tagList;">{{tag}}</span>
+  </div>
 </div>
