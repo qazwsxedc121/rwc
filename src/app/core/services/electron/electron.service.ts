@@ -35,13 +35,14 @@ export class ElectronService {
       this.load();
     }
   }
-  save(data: Array<any>) {
+  save(data: Object) {
     console.log('save');
     console.log(data);
-    this.ipcRenderer.sendSync('save-data', data);
-
+    this.ipcRenderer.invoke('save-data', data).then((result) => {
+      console.log(result);
+    });
   }
-  load(): Array<any> {
+  load(): Object {
     const data = this.ipcRenderer.sendSync('load-data', 'arg')
     console.log(data);
     return data;

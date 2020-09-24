@@ -4,20 +4,13 @@ import { ElectronService } from 'app/core/services';
 import { of } from 'rxjs';
 
 
-class Tag {
-  constructor(
-    public name: string,
-    public parent: string,
-  ) {
-
-  }
+interface Tag {
+  name: string,
+  parent: string,
 }
-class Word {
-  constructor(
-    public name: string,
-    public tag: string,
-  ) {
-  }
+interface Word {
+  name: string,
+  tag: string,
 }
 
 @Component({
@@ -40,15 +33,29 @@ export class HomeComponent implements OnInit {
   public newWord: string = "";
   public currentTag: string = "";
   public wordList: Array<Word> = [];
+  private wordSet: Set<string> = new Set<string>();
   public tagMap: Map<string, Tag> = new Map();
   public addWord(word: string, tag: string) {
-    this.wordList.push(new Word(word, tag));
+    if (this.wordSet.has(word)) {
+      return;
+    }
+    this.wordSet.add(word);
+    this.wordList.push({
+      name: word,
+      tag: tag,
+    });
   }
   public addTag(tag: string, parent?: string) {
     if (this.tagMap.has(tag)) {
       return;
     }
-    this.tagMap.set(tag, new Tag(tag, parent));
+    if (!parent) {
+      parent = "";
+    }
+    this.tagMap.set(tag, {
+      name: tag,
+      parent: parent,
+    });
     this.tagList.push(tag);
   }
   public tagList: Array<string> = [];
@@ -63,11 +70,29 @@ export class HomeComponent implements OnInit {
     this.newTag = ""
   }
   public save() {
-    this.electronService.save(this.wordList);
+    this.electronService.save({
+      'words': this.wordList,
+      'tags': Array.from(this.tagMap.entries()),
+    });
   }
   public load() {
     let d = this.electronService.load();
-    this.wordList = d;
+    if ('words' in d) {
+      this.wordList = d['words'];
+      this.refreshWordSet();
+    }
+    if ('tags' in d) {
+      this.tagMap = new Map(d['tags']);
+      this.refreshTagSet();
+    }
   }
-
+  refreshWordSet() {
+    this.wordSet = new Set<string>();
+    for (let word of this.wordList) {
+      this.wordSet.add(word.name);
+    }
+  }
+  refreshTagSet() {
+    this.tagList = Array.from(this.tagMap.keys());
+  }
 }

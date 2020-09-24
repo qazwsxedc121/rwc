@@ -82,18 +82,19 @@ try {
   ipcMain.on('load-data', (event, args) => {
     let path = app.getPath('appData') + '/save.json';
     if (!fs.existsSync(path)) {
-      event.returnValue = [];
+      event.returnValue = {};
       return;
     }
     let data = fs.readFileSync(path);
     event.returnValue = JSON.parse(data.toString());
 
   });
-  ipcMain.on('save-data', (event, args) => {
+  ipcMain.handle('save-data', async (event, args) => {
     let data = JSON.stringify(args);
     console.log(data);
     let path = app.getPath('appData');
     fs.writeFileSync(path + '/' + 'save.json', data);
+    return 'done';
   });
 
 } catch (e) {
