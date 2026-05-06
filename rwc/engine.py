@@ -1,3 +1,4 @@
+import gzip
 import numpy as np
 from pathlib import Path
 from rwc.types import ModelNotFoundError, WordResult
@@ -10,10 +11,28 @@ class WordVectorEngine:
             raise ModelNotFoundError(str(self._path))
         self._load()
 
+    def _open(self):
+        if self._path.suffix == ".gz":
+            return gzip.open(self._path, mode="rt", encoding="utf-8")
+        return open(self._path, encoding="utf-8")
+
     def _load(self):
         words = []
         vectors = []
-        with open(self._path, encoding="utf-8") as f:
+        with self._open() as f:
+            first = f.readline().strip().split()
+            # Detect .vec header: "vocab_size dim"
+            if len(first) == 2 and first[0].isdigit() and first[1].isdigit():
+                # Header line, skip it
+                pass
+            else:
+                # No header, process as first word
+                if len(first) >= 3:
+                    word = first[0]
+                    vec = np.array([float(x) for x in first[1:]])
+                    words.append(word)
+                    vectors.append(vec)
+
             for line in f:
                 parts = line.strip().split()
                 if len(parts) < 2:
