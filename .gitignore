@@ -14,3 +14,6 @@ Thumbs.db
 
 # build output
 /dist
+
+# word vector models (large files)
+rwc/data/
