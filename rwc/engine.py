@@ -19,26 +19,26 @@ class WordVectorEngine:
     def _load(self):
         words = []
         vectors = []
+        known_dim = None
+
         with self._open() as f:
             first = f.readline().strip().split()
-            # Detect .vec header: "vocab_size dim"
             if len(first) == 2 and first[0].isdigit() and first[1].isdigit():
-                # Header line, skip it
-                pass
+                known_dim = int(first[1])
             else:
-                # No header, process as first word
-                if len(first) >= 3:
-                    word = first[0]
-                    vec = np.array([float(x) for x in first[1:]])
+                known_dim = self._count_trailing_floats(first)
+                if known_dim > 0 and len(first) >= known_dim + 1:
+                    word = ' '.join(first[:-known_dim])
+                    vec = np.array([float(x) for x in first[-known_dim:]])
                     words.append(word)
                     vectors.append(vec)
 
             for line in f:
                 parts = line.strip().split()
-                if len(parts) < 2:
+                if len(parts) < known_dim + 1:
                     continue
-                word = parts[0]
-                vec = np.array([float(x) for x in parts[1:]])
+                word = ' '.join(parts[:-known_dim])
+                vec = np.array([float(x) for x in parts[-known_dim:]])
                 words.append(word)
                 vectors.append(vec)
 
@@ -48,6 +48,17 @@ class WordVectorEngine:
         self.vectors = self.vectors / norms
         self.word_to_index = {w: i for i, w in enumerate(words)}
         self.vocab_size = len(words)
+
+    @staticmethod
+    def _count_trailing_floats(parts):
+        count = 0
+        for token in reversed(parts):
+            try:
+                float(token)
+                count += 1
+            except ValueError:
+                break
+        return count
 
     def vocabulary(self) -> list[str]:
         return list(self.word_to_index.keys())
