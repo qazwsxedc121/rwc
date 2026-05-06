@@ -44,8 +44,9 @@ class WordVectorEngine:
 
     @staticmethod
     def _distance_to_percentile(distance: float) -> tuple[float, float]:
-        low = max(0.0, distance - 0.2)
-        high = min(1.0, distance + 0.2)
+        half_width = 0.003
+        low = max(0.0, distance - half_width)
+        high = min(1.0, distance + half_width)
         return (low, high)
 
     def stir(self, topic: str, distance: float = 0.5, n: int = 5) -> list[WordResult]:

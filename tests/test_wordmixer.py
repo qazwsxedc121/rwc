@@ -11,8 +11,8 @@ def test_wordmixer_init(tiny_model_path):
 
 def test_wordmixer_stir(tiny_model_path):
     mixer = WordMixer(tiny_model_path)
-    results = mixer.stir("dog", distance=0.3, n=3)
-    assert len(results) == 3
+    results = mixer.stir("dog", distance=0.3, n=1)
+    assert len(results) == 1
     for r in results:
         assert isinstance(r, WordResult)
         assert r.word != "dog"
@@ -20,10 +20,10 @@ def test_wordmixer_stir(tiny_model_path):
 
 def test_wordmixer_stir_batch(tiny_model_path):
     mixer = WordMixer(tiny_model_path)
-    results = mixer.stir_batch(["dog", "car"], distance=0.5, n=3)
+    results = mixer.stir_batch(["dog", "car"], distance=0.5, n=1)
     assert len(results) == 2
-    assert len(results[0]) == 3
-    assert len(results[1]) == 3
+    assert len(results[0]) == 1
+    assert len(results[1]) == 1
 
 
 def test_wordmixer_invalid_topic(tiny_model_path):

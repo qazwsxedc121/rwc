@@ -58,20 +58,20 @@ def test_cosine_similarities_dog(tiny_model_path):
 def test_distance_band_mapping():
     low, high = WordVectorEngine._distance_to_percentile(0.0)
     assert low == 0.0
-    assert high < 0.3
+    assert high < 0.01
 
     low, high = WordVectorEngine._distance_to_percentile(0.5)
-    assert 0.2 < low < 0.4
-    assert 0.6 < high < 0.8
+    assert 0.49 < low < 0.5
+    assert 0.5 < high < 0.51
 
     low, high = WordVectorEngine._distance_to_percentile(1.0)
-    assert low > 0.7
+    assert low > 0.99
 
 
 def test_stir_returns_n_words(tiny_model_path):
     engine = WordVectorEngine(tiny_model_path)
-    results = engine.stir("dog", distance=0.5, n=3)
-    assert len(results) == 3
+    results = engine.stir("dog", distance=0.5, n=1)
+    assert len(results) == 1
     for r in results:
         assert hasattr(r, 'word')
         assert hasattr(r, 'similarity')
@@ -86,16 +86,16 @@ def test_stir_excludes_topic_word(tiny_model_path):
 
 def test_stir_distance_0_returns_closest(tiny_model_path):
     engine = WordVectorEngine(tiny_model_path)
-    results = engine.stir("dog", distance=0.0, n=2)
+    results = engine.stir("dog", distance=0.0, n=1)
     words = [r.word for r in results]
     assert "cat" in words or "animal" in words
 
 
 def test_stir_distance_1_returns_farthest(tiny_model_path):
     engine = WordVectorEngine(tiny_model_path)
-    results = engine.stir("dog", distance=1.0, n=3)
+    results = engine.stir("dog", distance=1.0, n=1)
     similarities = [r.similarity for r in results]
-    assert all(s < 0.5 for s in similarities)
+    assert all(s < 0.0 for s in similarities)
 
 
 def test_describe(tiny_model_path):

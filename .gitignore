@@ -1,5 +1,10 @@
 # dependencies
 /node_modules
+# claude
+/.claude/
+
+# python
+*.egg-info/
 __pycache__/
 
 # IDE
