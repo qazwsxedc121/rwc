@@ -14,7 +14,7 @@ import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from rwc import WordMixer, chinese_word_filter
+from rwc import WordMixer
 from rwc.llm import chat, chat_json
 
 # ── Prompts (all Chinese) ────────────────────────────────────────────────────
@@ -86,7 +86,7 @@ class ABTestRunner:
     def __init__(self, mixer: WordMixer, config: ABConfig):
         self.mixer = mixer
         self.config = config
-        self._word_filter = chinese_word_filter if config.lang == "zh" else None
+        self._needs_filter_override = config.lang != "zh"
         if config.seed is not None:
             random.seed(config.seed)
 
@@ -170,11 +170,14 @@ class ABTestRunner:
             if not token:
                 continue
             try:
+                kwargs = {}
+                if self._needs_filter_override:
+                    kwargs["word_filter"] = None
                 results = self.mixer.stir(
                     token,
                     distance=self.config.rwc_distance,
                     n=self.config.rwc_num_words,
-                    word_filter=self._word_filter,
+                    **kwargs,
                 )
                 words = [r.word for r in results]
                 if words:

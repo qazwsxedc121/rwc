@@ -14,19 +14,28 @@ from rwc.types import (
 
 
 def chinese_word_filter(word: str) -> bool:
-    """Filter: keep only plausible Chinese words.
+    """Default quality filter for Chinese creative injection.
 
-    Rejects words containing Latin letters, pure digits/symbols, or
-    looking like URLs/file paths.
+    Keeps only clean, short, readable Chinese words. Rejects:
+      - Latin letters, digits, symbols, URLs
+      - Words shorter than 1 or longer than 4 characters
+      - Words containing non-CJK characters
     """
-    if len(word) < 1:
+    if len(word) < 1 or len(word) > 4:
         return False
-    if re.search(r"[a-zA-Z]", word):
+    if re.search(r"[a-zA-Z0-9]", word):
         return False
-    if re.fullmatch(r"[\d\.\,\-\+\/\\\%\s]+", word):
+    if re.search(r"[<>\(\)\[\]\{\}@://\.\,\-\+\/\\\%\s]", word):
         return False
-    if re.search(r"[<>\(\)\[\]\{\}@://]", word):
-        return False
+    # Require all chars to be in CJK ranges
+    for ch in word:
+        cp = ord(ch)
+        if not (0x3400 <= cp <= 0x9FFF or 0xE800 <= cp <= 0xF8FF
+                or 0x2000 <= cp <= 0x206F  # general punctuation
+                or 0x3000 <= cp <= 0x303F  # CJK punctuation
+                or 0xFF00 <= cp <= 0xFFEF  # halfwidth/fullwidth
+                or 0x4E00 <= cp <= 0x9FFF):  # explicit CJK Unified
+            return False
     return True
 
 
@@ -54,7 +63,7 @@ class WordMixer:
         distance: float = 0.5,
         n: int = 5,
         *,
-        word_filter: "Callable[[str], bool] | None" = None,
+        word_filter: "Callable[[str], bool] | None" = chinese_word_filter,
     ) -> list[WordResult]:
         if not (0.0 <= distance <= 1.0):
             raise ValueError(f"distance must be 0.0-1.0, got {distance}")
