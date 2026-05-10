@@ -49,18 +49,7 @@ class WordMixer:
         return self._engine.describe(topic)
 
     def _find_suggestions(self, word: str, max_suggestions: int = 5) -> list[str]:
-        vocab = self._engine.vocabulary()
-        scored = [(w, _simple_score(word, w)) for w in vocab]
-        scored.sort(key=lambda x: x[1], reverse=True)
-        return [w for w, s in scored[:max_suggestions] if s > 0]
-
-
-def _simple_score(a: str, b: str) -> float:
-    a_set = set(a)
-    b_set = set(b)
-    intersection = a_set & b_set
-    union = a_set | b_set
-    return len(intersection) / max(len(union), 1)
+        return self._engine.find_similar_words(word, max_suggestions=max_suggestions)
 
 
 __all__ = [

@@ -1,7 +1,15 @@
 import gzip
-import numpy as np
+from collections import defaultdict
 from pathlib import Path
+
+import numpy as np
+
 from rwc.types import ModelNotFoundError, WordResult
+
+
+def _char_trigrams(word: str) -> set[str]:
+    padded = f"  {word}  "
+    return {padded[i:i + 3] for i in range(len(padded) - 2)}
 
 
 class WordVectorEngine:
@@ -47,7 +55,12 @@ class WordVectorEngine:
         norms = np.linalg.norm(self.vectors, axis=1, keepdims=True)
         self.vectors = self.vectors / norms
         self.word_to_index = {w: i for i, w in enumerate(words)}
+        self._index_to_word = {i: w for w, i in self.word_to_index.items()}
         self.vocab_size = len(words)
+        self._trigram_index: dict[str, set[int]] = defaultdict(set)
+        for i, word in enumerate(words):
+            for trigram in _char_trigrams(word):
+                self._trigram_index[trigram].add(i)
 
     @staticmethod
     def _count_trailing_floats(parts):
@@ -62,6 +75,17 @@ class WordVectorEngine:
 
     def vocabulary(self) -> list[str]:
         return list(self.word_to_index.keys())
+
+    def find_similar_words(self, query: str, max_suggestions: int = 5) -> list[str]:
+        query_trigrams = _char_trigrams(query)
+        overlap: dict[int, int] = defaultdict(int)
+        for trigram in query_trigrams:
+            for idx in self._trigram_index.get(trigram, ()):
+                overlap[idx] += 1
+        if not overlap:
+            return []
+        scored = sorted(overlap.items(), key=lambda x: x[1], reverse=True)
+        return [self._index_to_word[idx] for idx, _ in scored[:max_suggestions]]
 
     def get_vector(self, word: str) -> np.ndarray:
         if word not in self.word_to_index:
@@ -97,9 +121,8 @@ class WordVectorEngine:
 
         chosen = np.random.choice(candidates, size=min(n, len(candidates)), replace=False)
 
-        index_to_word = {v: k for k, v in self.word_to_index.items()}
         return [
-            WordResult(word=index_to_word[i], similarity=float(similarities[i]))
+            WordResult(word=self._index_to_word[i], similarity=float(similarities[i]))
             for i in chosen
         ]
 
@@ -108,11 +131,10 @@ class WordVectorEngine:
         topic_idx = self.word_to_index[topic]
         sorted_indices = np.argsort(similarities)[::-1]
         sorted_indices = [i for i in sorted_indices if i != topic_idx][:n]
-        index_to_word = {v: k for k, v in self.word_to_index.items()}
         return {
             "topic": topic,
             "nearest": [
-                WordResult(word=index_to_word[i], similarity=float(similarities[i]))
+                WordResult(word=self._index_to_word[i], similarity=float(similarities[i]))
                 for i in sorted_indices
             ]
         }
