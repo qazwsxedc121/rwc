@@ -27,15 +27,31 @@ def chinese_word_filter(word: str) -> bool:
         return False
     if re.search(r"[<>\(\)\[\]\{\}@://\.\,\-\+\/\\\%\s]", word):
         return False
-    # Require all chars to be in CJK ranges
     for ch in word:
         cp = ord(ch)
         if not (0x3400 <= cp <= 0x9FFF or 0xE800 <= cp <= 0xF8FF
-                or 0x2000 <= cp <= 0x206F  # general punctuation
-                or 0x3000 <= cp <= 0x303F  # CJK punctuation
-                or 0xFF00 <= cp <= 0xFFEF  # halfwidth/fullwidth
-                or 0x4E00 <= cp <= 0x9FFF):  # explicit CJK Unified
+                or 0x2000 <= cp <= 0x206F
+                or 0x3000 <= cp <= 0x303F
+                or 0xFF00 <= cp <= 0xFFEF
+                or 0x4E00 <= cp <= 0x9FFF):
             return False
+    return True
+
+
+def english_word_filter(word: str) -> bool:
+    """Quality filter for English creative injection.
+
+    Keeps only clean alphabetic words. Rejects:
+      - Words shorter than 2 or longer than 12 characters
+      - Pure uppercase acronyms (>2 chars)
+      - Words with digits, symbols, or non-letter characters
+    """
+    if len(word) < 2 or len(word) > 12:
+        return False
+    if not re.match(r"^[a-zA-Z][a-zA-Z\-']*[a-zA-Z]$", word):
+        return False
+    if word.isupper() and len(word) > 2:
+        return False
     return True
 
 
@@ -95,4 +111,5 @@ __all__ = [
     "WordNotInVocabularyError",
     "ModelNotFoundError",
     "chinese_word_filter",
+    "english_word_filter",
 ]
