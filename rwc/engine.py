@@ -1,5 +1,6 @@
 import gzip
 from collections import defaultdict
+from collections.abc import Callable
 from pathlib import Path
 
 import numpy as np
@@ -98,12 +99,22 @@ class WordVectorEngine:
 
     @staticmethod
     def _distance_to_percentile(distance: float) -> tuple[float, float]:
-        half_width = 0.003
-        low = max(0.0, distance - half_width)
-        high = min(1.0, distance + half_width)
+        # Non-linear mapping: d→d² so small distances stay close to top neighbors.
+        # d=0→0%, d=0.2→4%, d=0.3→9%, d=0.5→25%, d=0.7→49%, d=1.0→100%
+        center = distance ** 2
+        half_width = 0.02
+        low = max(0.0, center - half_width)
+        high = min(1.0, center + half_width)
         return (low, high)
 
-    def stir(self, topic: str, distance: float = 0.5, n: int = 5) -> list[WordResult]:
+    def stir(
+        self,
+        topic: str,
+        distance: float = 0.5,
+        n: int = 5,
+        *,
+        word_filter: "Callable[[str], bool] | None" = None,
+    ) -> list[WordResult]:
         similarities = self.similarities(topic)
         topic_idx = self.word_to_index[topic]
 
@@ -116,6 +127,9 @@ class WordVectorEngine:
         hi = max(lo + 1, int(high_pct * total))
 
         candidates = sorted_indices[lo:hi]
+        if word_filter is not None:
+            candidates = [i for i in candidates if word_filter(self._index_to_word[i])]
+
         if len(candidates) == 0:
             candidates = sorted_indices
 

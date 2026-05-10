@@ -1,12 +1,33 @@
 """RWC - Random Word Collector. A mechanical word mixing device."""
 
+from __future__ import annotations
+
+import re
 from pathlib import Path
+
 from rwc.engine import WordVectorEngine
 from rwc.types import (
     WordResult,
     WordNotInVocabularyError,
     ModelNotFoundError,
 )
+
+
+def chinese_word_filter(word: str) -> bool:
+    """Filter: keep only plausible Chinese words.
+
+    Rejects words containing Latin letters, pure digits/symbols, or
+    looking like URLs/file paths.
+    """
+    if len(word) < 1:
+        return False
+    if re.search(r"[a-zA-Z]", word):
+        return False
+    if re.fullmatch(r"[\d\.\,\-\+\/\\\%\s]+", word):
+        return False
+    if re.search(r"[<>\(\)\[\]\{\}@://]", word):
+        return False
+    return True
 
 
 class WordMixer:
@@ -27,7 +48,14 @@ class WordMixer:
     def vocab_size(self) -> int:
         return self._engine.vocab_size
 
-    def stir(self, topic: str, distance: float = 0.5, n: int = 5) -> list[WordResult]:
+    def stir(
+        self,
+        topic: str,
+        distance: float = 0.5,
+        n: int = 5,
+        *,
+        word_filter: "Callable[[str], bool] | None" = None,
+    ) -> list[WordResult]:
         if not (0.0 <= distance <= 1.0):
             raise ValueError(f"distance must be 0.0-1.0, got {distance}")
 
@@ -36,7 +64,7 @@ class WordMixer:
             suggestions = self._find_suggestions(topic)
             raise WordNotInVocabularyError(topic, suggestions)
 
-        return self._engine.stir(topic, distance=distance, n=n)
+        return self._engine.stir(topic, distance=distance, n=n, word_filter=word_filter)
 
     def stir_batch(self, topics: list[str], distance: float = 0.5, n: int = 5) -> list[list[WordResult]]:
         return [self.stir(t, distance=distance, n=n) for t in topics]
@@ -57,4 +85,5 @@ __all__ = [
     "WordResult",
     "WordNotInVocabularyError",
     "ModelNotFoundError",
+    "chinese_word_filter",
 ]
