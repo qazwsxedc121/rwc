@@ -60,6 +60,7 @@ class ABConfig:
     rwc_distance: float = 0.5
     rwc_num_words: int = 5
     temperature: float | None = None  # None = API default (1.0)
+    lang: str = "zh"  # "zh" or "en"
     seed: int | None = None
 
     @property
@@ -85,6 +86,7 @@ class ABTestRunner:
     def __init__(self, mixer: WordMixer, config: ABConfig):
         self.mixer = mixer
         self.config = config
+        self._word_filter = chinese_word_filter if config.lang == "zh" else None
         if config.seed is not None:
             random.seed(config.seed)
 
@@ -172,7 +174,7 @@ class ABTestRunner:
                     token,
                     distance=self.config.rwc_distance,
                     n=self.config.rwc_num_words,
-                    word_filter=chinese_word_filter,
+                    word_filter=self._word_filter,
                 )
                 words = [r.word for r in results]
                 if words:
@@ -329,6 +331,10 @@ def main():
         help="LLM temperature for responses (default: API default, usually 1.0)",
     )
     parser.add_argument(
+        "--lang", default="zh", choices=["zh", "en"],
+        help="Prompt language and word filter (default: zh)",
+    )
+    parser.add_argument(
         "--output", type=Path, default=None,
         help="Save full results as JSON",
     )
@@ -354,6 +360,7 @@ def main():
         rwc_distance=args.distance,
         rwc_num_words=args.num_words,
         temperature=args.temperature,
+        lang=args.lang,
         seed=args.seed,
     )
 
